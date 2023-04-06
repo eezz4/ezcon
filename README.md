@@ -67,6 +67,7 @@ export const ezState2 = ezcon('useState', () => 0)
 export const ezState3 = ezcon('useState', () => 0)
 export const ezRef1 = ezcon('useRef', () => 0)
 export const ScopeTestCombineProvider = ezconProviderCombine(
+  () => undefined,
   ezState1,
   ezState2,
   ezState3,
@@ -122,6 +123,52 @@ ScopeTest1 call 1 0 0 0
 ScopeTest1 call 2 0 0 0
 ScopeTest1 call 3 0 0 0
 ScopeTest1 call 4 0 0 0
+```
+
+## My Migration Example 1
+
+### before
+
+```tsx
+export const ctxModal = {
+  node: createContext<ReactNode>(null),
+  setNode: createContext<Dispatch<SetStateAction<ReactNode>>>(() => {})
+} as const
+
+export const ProviderModal = (props: { children: ReactNode }) => {
+  const [node, setNode] = useState<ReactNode>(null)
+  return (
+    <ctxModal.setNode.Provider value={setNode}>
+      <ctxModal.node.Provider value={node}>
+        {props.children}
+      </ctxModal.node.Provider>
+    </ctxModal.setNode.Provider>
+  )
+}
+```
+
+```tsx
+<ProviderModal>{props.children}</ProviderModal>
+```
+
+```tsx
+const setNode = useContext(ctxModal.setNode)
+const node = useContext(ctxModal.node)
+```
+
+### after
+
+```tsx
+export const ezModal = ezcon('useState', () => null as ReactNode)
+```
+
+```tsx
+<ezModal.Provider>{props.children}</ezModal.Provider>
+```
+
+```tsx
+const setNode = ezModal.useDispatch()
+const node = ezModal.useValue()
 ```
 
 ## License

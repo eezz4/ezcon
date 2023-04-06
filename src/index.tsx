@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useRef, useState } from 'react'
 
-type EzconInitFunc<InitValue> = () => InitValue
+type EzconInitFunc<IV> = () => IV
 
 interface ProviderInterface {
   (props: { children: React.ReactNode }): JSX.Element
@@ -8,47 +8,47 @@ interface ProviderInterface {
 
 type EzconFactoryType = 'useState' | 'useRef'
 
-type EzconFactoryReturn<
-  EzconType extends EzconFactoryType,
-  InitValue
-> = EzconType extends 'useState'
-  ? EzconReturnUseState<InitValue>
-  : EzconReturnUseRef<InitValue>
+type EzconFactoryReturn<IV, EFT> = EFT extends 'useState'
+  ? EzconReturnUseState<IV>
+  : EzconReturnUseRef<IV>
 
-type EzconReturnUseState<InitValue> = {
+type EzconReturnUseState<IV> = {
   Provider: ProviderInterface
-  useValue: () => InitValue | undefined
-  useDispatch: () => React.Dispatch<React.SetStateAction<InitValue>>
+  useValue: () => IV | null
+  useDispatch: () => React.Dispatch<React.SetStateAction<IV>>
 }
-type EzconReturnUseRef<InitValue> = {
+type EzconReturnUseRef<IV> = {
   Provider: ProviderInterface
-  useMutableRefObject: () => React.MutableRefObject<InitValue | undefined>
+  useMutableRefObject: () => React.MutableRefObject<IV | null>
 }
 
-export function ezcon<EzconType extends EzconFactoryType, InitValue>(
-  type: EzconType,
-  initFunc: EzconInitFunc<InitValue>
+/**
+ * @description
+ * 1. Explanation of the Generic Abbreviation
+ *    - EFT : EzconFactoryType
+ *    - IV :  initValue
+ * 2. Example of when you need more type extension than initial value
+ *    - ezcon("useState", ()`: string | null` => null);
+ *    - ezcon("useState", ()`: string[]` => []);
+ */
+export function ezcon<EFT extends EzconFactoryType, IV>(
+  factoryType: EFT,
+  initFunc: EzconInitFunc<IV>
 ) {
-  switch (type) {
+  switch (factoryType) {
     case 'useState':
-      return ezconUseState(initFunc) as unknown as EzconFactoryReturn<
-        EzconType,
-        InitValue
-      >
+      return ezconUseState(initFunc) as unknown as EzconFactoryReturn<IV, EFT>
     case 'useRef':
-      return ezconUseRef(initFunc) as unknown as EzconFactoryReturn<
-        EzconType,
-        InitValue
-      >
+      return ezconUseRef(initFunc) as unknown as EzconFactoryReturn<IV, EFT>
     default:
-      throw new Error(`ezcon Invalid type: "${type}".`)
+      throw new Error(`ezcon Invalid type: "${factoryType}".`)
   }
 }
 
-function ezconUseState<InitValue>(initFunc: EzconInitFunc<InitValue>) {
-  const contextValue = createContext<InitValue | undefined>(undefined)
+function ezconUseState<IV>(initFunc: EzconInitFunc<IV>) {
+  const contextValue = createContext<IV | null>(null)
   const contextDispatch = createContext<
-    React.Dispatch<React.SetStateAction<InitValue>>
+    React.Dispatch<React.SetStateAction<IV>>
   >(() => {
     throw new Error('Dispatch function not provided')
   })
@@ -78,12 +78,8 @@ function ezconUseState<InitValue>(initFunc: EzconInitFunc<InitValue>) {
   }
 }
 
-function ezconUseRef<InitValue>(initFunc: EzconInitFunc<InitValue>) {
-  const contextRef = createContext<
-    React.MutableRefObject<InitValue | undefined>
-  >({
-    current: undefined
-  })
+function ezconUseRef<IV>(initFunc: EzconInitFunc<IV>) {
+  const contextRef = createContext<React.MutableRefObject<IV> | null>(null)
 
   const contextNestedChecker = createContext(false)
   const Provider: ProviderInterface = (props: {
@@ -106,18 +102,30 @@ function ezconUseRef<InitValue>(initFunc: EzconInitFunc<InitValue>) {
   }
 }
 
-export function ezconProviderCombine(
+/**
+ * @param useProviderCombine When the provider is registered, register `a custom hook to run`. If none, use `() => undefined`.
+ * @description Use to combine `the providers of ezcons`.
+ */
+export function ezconProviderCombine<HOOK extends Function>(
+  useProviderCombine: HOOK,
   ...ezcons: { Provider: ProviderInterface }[]
 ) {
-  return (props: { children: React.ReactNode }) => {
-    if (ezcons.length === 0)
+  return function Provider(props: { children: React.ReactNode }) {
+    return <RecursionProvider _ezcons={ezcons} />
+    function RecursionProvider(props: {
+      _ezcons: { Provider: ProviderInterface }[]
+    }) {
+      if (props._ezcons.length === 0) return <TerminalProvider />
+      const ezcon = props._ezcons[0]
+      return (
+        <ezcon.Provider>
+          <RecursionProvider _ezcons={props._ezcons.slice(1)} />
+        </ezcon.Provider>
+      )
+    }
+    function TerminalProvider() {
+      useProviderCombine()
       return <React.Fragment>{props.children}</React.Fragment>
-
-    const ezcon = ezcons[0]
-    return (
-      <ezcon.Provider>
-        {ezconProviderCombine(...ezcons.slice(1))({ children: props.children })}
-      </ezcon.Provider>
-    )
+    }
   }
 }
