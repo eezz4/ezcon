@@ -24,37 +24,37 @@ npm install --save ezcon
 ```tsx
 import { ezcon } from 'ezcon'
 
-const state1 = ezcon('useState', () => 0)
+const ezState1 = ezcon('useState', () => 0)
 
 export function App() {
   return (
-    <state1.Provider>
-      <TestPage1 />
-      <TestPage2 />
-    </state1.Provider>
+    <ezState1.Provider>
+      <ScopeTest1 />
+      <ScopeTest2 />
+    </ezState1.Provider>
   )
 }
 
-function TestPage1() {
-  const value1 = state1.useValue()
-  console.log('TestPage1 call', value1)
-  return <div>{value1}</div>
+function ScopeTest1() {
+  const value1 = ezState1.useValue()
+  console.log('ScopeTest1 call', value1)
+  return <div />
 }
 
-function TestPage2() {
-  const dispatch1 = state1.useDispatch()
-  console.log('TestPage2 call')
+function ScopeTest2() {
+  const dispatch1 = ezState1.useDispatch()
+  console.log('ScopeTest2 call')
   return <button onClick={() => dispatch1((p) => p + 1)} />
 }
 ```
 
-##### Click the button 4 times
+##### Click the button in ScopeTest2 four times.
 
 ```log
-TestPage1 call 1
-TestPage1 call 2
-TestPage1 call 3
-TestPage1 call 4
+ScopeTest1 call 1
+ScopeTest1 call 2
+ScopeTest1 call 3
+ScopeTest1 call 4
 ```
 
 ## Usage 2 : `ezconProviderCombine()`
@@ -62,65 +62,66 @@ TestPage1 call 4
 ```tsx
 import { ezcon, ezconProviderCombine } from './ezcon'
 
-export const state1 = ezcon('useState', () => 0)
-export const state2 = ezcon('useState', () => 0)
-export const state3 = ezcon('useState', () => 0)
-export const ref1 = ezcon('useRef', () => 0)
-export const TestPagesCombineProvider = ezconProviderCombine(
-  state1,
-  state2,
-  state3,
-  ref1
+export const ezState1 = ezcon('useState', () => 0)
+export const ezState2 = ezcon('useState', () => 0)
+export const ezState3 = ezcon('useState', () => 0)
+export const ezRef1 = ezcon('useRef', () => 0)
+export const ScopeTestCombineProvider = ezconProviderCombine(
+  ezState1,
+  ezState2,
+  ezState3,
+  ezRef1
 )
 
 export function App() {
   return (
     <>
-      <TestPagesCombineProvider>
-        <TestPage1 />
-        <TestPage2 />
-      </TestPagesCombineProvider>
-      <OtherPage />
+      <ScopeTestCombineProvider>
+        <ScopeTest1 />
+        <ScopeTest2 />
+      </ScopeTestCombineProvider>
+      <OutsideScope />
     </>
   )
 }
 ```
 
 ```tsx
-function TestPage1() {
-  const value1 = state1.useValue()
-  const value2 = state2.useValue()
-  const value3 = state3.useValue()
-  const mutableRef1 = ref1.useRef()
-  console.log('TestPage1 call', value1, value2, value3, mutableRef1.current)
+function ScopeTest1() {
+  const value1 = ezState1.useValue()
+  const value2 = ezState2.useValue()
+  const value3 = ezState3.useValue()
+  const refObj1 = ezRef1.useMutableRefObject()
+  console.log('ScopeTest1 call', value1, value2, value3, refObj1.current)
   return <div />
 }
-function TestPage2() {
-  // const value1 = state1.useValue();
-  const value2 = state2.useValue()
-  const value3 = state3.useValue()
-  const mutableRef1 = ref1.useRef()
-  const dispatch1 = state1.useDispatch()
-  console.log('TestPage2 call')
+function ScopeTest2() {
+  // const value1 = ezState1.useValue();
+  const value2 = ezState2.useValue()
+  const value3 = ezState3.useValue()
+  const refObj1 = ezRef1.useMutableRefObject()
+
+  const dispatch1 = ezState1.useDispatch()
+  console.log('ScopeTest2 call')
   return <button onClick={() => dispatch1((p) => p + 1)} />
 }
-function OtherPage() {
-  const value1 = state1.useValue()
-  const value2 = state2.useValue()
-  const value3 = state3.useValue()
-  const mutableRef1 = ref1.useRef()
-  console.log('OtherPage call')
+function OutsideScope() {
+  const value1 = ezState1.useValue()
+  const value2 = ezState2.useValue()
+  const value3 = ezState3.useValue()
+  const refObj1 = ezRef1.useMutableRefObject()
+  console.log('OutsideScope call')
   return <div />
 }
 ```
 
-##### Click the button 4 times
+##### Click the button in ScopeTest2 four times.
 
 ```log
-TestPage1 call 1 0 0 0
-TestPage1 call 2 0 0 0
-TestPage1 call 3 0 0 0
-TestPage1 call 4 0 0 0
+ScopeTest1 call 1 0 0 0
+ScopeTest1 call 2 0 0 0
+ScopeTest1 call 3 0 0 0
+ScopeTest1 call 4 0 0 0
 ```
 
 ## License
