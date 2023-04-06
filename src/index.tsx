@@ -8,7 +8,7 @@ interface ProviderInterface {
 
 type EzconFactoryType = 'useState' | 'useRef'
 
-type EzconReturn<
+type EzconFactoryReturn<
   EzconType extends EzconFactoryType,
   InitValue
 > = EzconType extends 'useState'
@@ -22,20 +22,26 @@ type EzconReturnUseState<InitValue> = {
 }
 type EzconReturnUseRef<InitValue> = {
   Provider: ProviderInterface
-  useRef: () => React.MutableRefObject<InitValue | undefined>
+  useMutableRefObject: () => React.MutableRefObject<InitValue | undefined>
 }
 
 export function ezcon<EzconType extends EzconFactoryType, InitValue>(
   type: EzconType,
   initFunc: EzconInitFunc<InitValue>
-): EzconReturn<EzconType, InitValue> {
+) {
   switch (type) {
     case 'useState':
-      return ezconUseState(initFunc) as any
+      return ezconUseState(initFunc) as unknown as EzconFactoryReturn<
+        EzconType,
+        InitValue
+      >
     case 'useRef':
-      return ezconUseRef(initFunc) as any
+      return ezconUseRef(initFunc) as unknown as EzconFactoryReturn<
+        EzconType,
+        InitValue
+      >
     default:
-      throw new Error(`ezcon Invalid type "${type}".`)
+      throw new Error(`ezcon Invalid type: "${type}".`)
   }
 }
 
@@ -52,7 +58,7 @@ function ezconUseState<InitValue>(initFunc: EzconInitFunc<InitValue>) {
     children: React.ReactNode
   }) => {
     if (useContext(contextNestedChecker))
-      throw new Error('Providers cannot be nested.')
+      throw new Error('The same provider is being used nested.')
 
     const state = useState(initFunc())
     return (
@@ -84,7 +90,7 @@ function ezconUseRef<InitValue>(initFunc: EzconInitFunc<InitValue>) {
     children: React.ReactNode
   }) => {
     if (useContext(contextNestedChecker))
-      throw new Error('Providers cannot be nested.')
+      throw new Error('The same provider is being used nested.')
 
     return (
       <contextNestedChecker.Provider value>
@@ -96,7 +102,7 @@ function ezconUseRef<InitValue>(initFunc: EzconInitFunc<InitValue>) {
   }
   return {
     Provider,
-    useRef: () => useContext(contextRef)
+    useMutableRefObject: () => useContext(contextRef)
   }
 }
 
