@@ -1,19 +1,11 @@
-# ezcon
+# ezcon ( react easy context )
 
-react easy context `(ez con)`
-
-- You can declare useState(`ezState`) and useRef(`ezRef`) globally, use `Provider` to specify `the scope of the hook`
-- `type inferred` based on the `useState` and `useRef`.
+- You can declare useState(`ezState`) and useRef(`ezRef`) globally, use `Provider` to specify `the scope of the hook`.
 - It's based on the default `react context`.
+- `type inferred` based on the `useState` and `useRef`.
 - You can use `scope providers`.
 - If the `same Provider` is nested and used, an `Error` is thrown.
-- You can probably use any `combination of Providers`.
-
-```bash
-I made this for my personal use, but distribute it because I think it's useful.
-I haven't used it yet, so I don't know if there are any bugs.
-After migrating and testing my project, I will raise it to 1.0.0.
-```
+- You can use `combination of Providers`.
 
 [![NPM](https://img.shields.io/npm/v/ezcon.svg)](https://www.npmjs.com/package/ezcon) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 
@@ -22,6 +14,8 @@ After migrating and testing my project, I will raise it to 1.0.0.
 ```bash
 npm install --save ezcon
 ```
+
+---
 
 ## Usage 1 : `ezState`
 
@@ -52,7 +46,7 @@ function ScopeTest2() {
 }
 ```
 
-##### Click the button in ScopeTest2 four times.
+#### Click the button in ScopeTest2 four times.
 
 ```log
 ScopeTest1 call 1
@@ -61,27 +55,32 @@ ScopeTest1 call 3
 ScopeTest1 call 4
 ```
 
+---
+
 ## Usage 2 : `ezCombineProvider()`
 
 ```tsx
 import { ezState, ezRef, ezCombineProvider } from 'ezcon'
 
-export const ezState1 = ezState(0)
-export const ezState2 = ezState(() => 0)
-export const ezState3 = ezState(() => 0)
-export const ezRef1 = ezRef(0)
-export const ScopeTestCombineProvider = ezCombineProvider(
-  [ezState1, ezState2, ezState3, ezRef1],
-  () => console.log('hello ezcon')
+export const ezTest = {
+  state1: ezState(0),
+  state2: ezState(() => 0),
+  state3: ezState(() => 0),
+  ref1: ezRef(0)
+} as const
+
+export const ScopeTestProvider = ezCombineProvider(
+  [ezTest.state1, ezTest.state2, ezTest.state3, ezTest.ref1],
+  () => console.log('hello ezcon Provider hook')
 )
 
 export function App() {
   return (
     <>
-      <ScopeTestCombineProvider>
+      <ScopeTestProvider>
         <ScopeTest1 />
         <ScopeTest2 />
-      </ScopeTestCombineProvider>
+      </ScopeTestProvider>
       <OutsideScope />
     </>
   )
@@ -90,46 +89,48 @@ export function App() {
 
 ```tsx
 function ScopeTest1() {
-  const value1 = ezState1.useValue()
-  const value2 = ezState2.useValue()
-  const value3 = ezState3.useValue()
-  const refObj1 = ezRef1.useMutableRefObject()
+  const value1 = ezTest.state1.useValue()
+  const value2 = ezTest.state2.useValue()
+  const value3 = ezTest.state3.useValue()
+  const refObj1 = ezTest.ref1.useMutableRefObject()
   console.log('ScopeTest1 call', value1, value2, value3, refObj1.current)
   return <div />
 }
 function ScopeTest2() {
-  // const value1 = ezState1.useValue();
-  const value2 = ezState2.useValue()
-  const value3 = ezState3.useValue()
-  const refObj1 = ezRef1.useMutableRefObject()
+  // const value1 = ezTest.state1.useValue()
+  const value2 = ezTest.state2.useValue()
+  const value3 = ezTest.state3.useValue()
+  const refObj1 = ezTest.ref1.useMutableRefObject()
 
-  const dispatch1 = ezState1.useDispatch()
+  const dispatch1 = ezTest.state1.useDispatch()
   console.log('ScopeTest2 call')
   return <button onClick={() => dispatch1((p) => p + 1)} />
 }
 function OutsideScope() {
-  const value1 = ezState1.useValue()
-  const value2 = ezState2.useValue()
-  const value3 = ezState3.useValue()
-  const refObj1 = ezRef1.useMutableRefObject()
+  const value1 = ezTest.state1.useValue()
+  const value2 = ezTest.state2.useValue()
+  const value3 = ezTest.state3.useValue()
+  const refObj1 = ezTest.ref1.useMutableRefObject()
   console.log('OutsideScope call')
   return <div />
 }
 ```
 
-##### Click the button in ScopeTest2 four times.
+#### Click the button in ScopeTest2 four times.
 
 ```log
-hello ezcon
+hello ezcon Provider hook
 ScopeTest1 call 1 0 0 0
 ScopeTest1 call 2 0 0 0
 ScopeTest1 call 3 0 0 0
 ScopeTest1 call 4 0 0 0
 ```
 
-## My Migration Example 1
+---
 
-#### before
+## My migration Example 1
+
+### before
 
 ```tsx
 export const ctxModal = {
@@ -158,7 +159,7 @@ const setNode = useContext(ctxModal.setNode)
 const node = useContext(ctxModal.node)
 ```
 
-#### after
+### after
 
 ```tsx
 export const ezModal = ezState<ReactNode>(null)
@@ -173,9 +174,11 @@ const setNode = ezModal.useDispatch()
 const node = ezModal.useValue()
 ```
 
-## My Migration Example 2 `ezCombineProvider`
+---
 
-#### before
+## My migration Example 2 `ezCombineProvider`
+
+### before
 
 ```tsx
 export const ctxPBL = {
@@ -212,42 +215,93 @@ const summaryArr = useContext(ctxPBL.summaryArr)
 const pblRefetch = useContext(ctxPBL.refetch)
 ```
 
-#### after `ezCombineProvider`
+### after
 
 ```tsx
-export const ezPBLSummaryArr = ezState<nsPageBoard.Summary[]>([]);
-export const ezPBLPageItemArr = ezState<nsPageBoard.PageItem[]>([]);
-export const ezPBLRefetch = ezRef(() => {});
+export const ezPBL = {
+  summaryArr: ezState<nsPageBoard.Summary[]>([]),
+  pageItemArr: ezState<nsPageBoard.PageItem[]>([]),
+  refetch: ezRef(() => {}),
+} as const;
 
+
+// ezCombineProvider
 export const ProviderPBL = ezCombineProvider(
-  [ezPBLSummaryArr, ezPBLPageItemArr, ezPBLRefetch],
-  useProviderPBL
-);
-
-function useProviderPBL() {
-  // ...
-  useEffect(() => {
+  [ezPBL.summaryArr, ezPBL.pageItemArr, ezPBL.refetch],
+  // Hook to run when the provider is registered.
+  () => {
     // ...
-  }, [...]);
+    useEffect(() => {
+      // ...
+    }, [...]);
 
-  const q = useQueryGet(...);
-  ezPBLRefetch.useMutableRefObject().current = q.refetch;
+    const q = useQueryGet(...);
 
-  const pageItemArrDispatch = ezPBLPageItemArr.useDispatch();
-  const summaryArrDispatch = ezPBLSummaryArr.useDispatch();
-  useEffect(() => {
-    if (q.data) {
-      pageItemArrDispatch(q.data.pageItemArr ?? []);
-      summaryArrDispatch(q.data.summaryArr ?? []);
-    }
-  }, [q.data, pageItemArrDispatch, summaryArrDispatch]);
-}
+    // ezState
+    const dispatchSummaryArr = ezPBL.summaryArr.useDispatch();
+    const disPatchPageItemArr = ezPBL.pageItemArr.useDispatch();
+    useEffect(() => {
+      if (q.data) {
+        dispatchSummaryArr(q.data.summaryArr ?? []);
+        disPatchPageItemArr(q.data.pageItemArr ?? []);
+      }
+    }, [q.data, disPatchPageItemArr, dispatchSummaryArr]);
+
+    // ezRef
+    ezPBL.refetch.useMutableRefObject().current = q.refetch;
+
+);
 ```
 
 ```tsx
-const pageItemArr = ezPBLPageItemArr.useValue()
-const summaryArr = ezPBLSummaryArr.useValue()
-const pblRefetch = ezPBLRefetch.useMutableRefObject().current
+const summaryArr = ezPBL.summaryArr.useValue()
+const pageItemArr = ezPBL.pageItemArr.useValue()
+const refetchPBL = ezPBL.refetch.useMutableRefObject().current
+```
+
+---
+
+## My migration Example 3 `useState`
+
+### after
+
+```tsx
+export const ezMyTheme = {
+  theme: ezState<MyTheme>(factoryMyTheme(null)),
+  toggle: ezRef<() => void>(() => {})
+} as const
+
+export const ProviderMyTheme = ezCombineProvider(
+  [ezMyTheme.theme, ezMyTheme.toggle],
+  () => {
+    const [myThemeMode, setMyThemeMode] = useState<MyThemeMode>(null) // useState
+
+    ezMyTheme.toggle.useMutableRefObject().current = () => {
+      setMyThemeMode((p) =>
+        p === null || p === 'light mode' ? 'dark mode' : 'light mode'
+      )
+    }
+
+    const dispatchMyTheme = ezMyTheme.theme.useDispatch()
+    useEffect(() => {
+      if (myThemeMode === null) {
+        const value = localStorage.getItem(MyLsKey.myThemeMode)
+        switch (value) {
+          case 'dark mode':
+            setMyThemeMode('dark mode')
+            break
+          case 'light mode':
+          default:
+            setMyThemeMode('light mode')
+            break
+        }
+      } else {
+        localStorage.setItem(MyLsKey.myThemeMode, myThemeMode)
+        dispatchMyTheme(factoryMyTheme(myThemeMode))
+      }
+    }, [myThemeMode, dispatchMyTheme])
+  }
+)
 ```
 
 ## License
