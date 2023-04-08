@@ -71,11 +71,8 @@ export const ezState2 = ezState(() => 0)
 export const ezState3 = ezState(() => 0)
 export const ezRef1 = ezRef(0)
 export const ScopeTestCombineProvider = ezCombineProvider(
-  () => undefined,
-  ezState1,
-  ezState2,
-  ezState3,
-  ezRef1
+  [ezState1, ezState2, ezState3, ezRef1],
+  () => console.log('hello ezcon')
 )
 
 export function App() {
@@ -123,6 +120,7 @@ function OutsideScope() {
 ##### Click the button in ScopeTest2 four times.
 
 ```log
+hello ezcon
 ScopeTest1 call 1 0 0 0
 ScopeTest1 call 2 0 0 0
 ScopeTest1 call 3 0 0 0
