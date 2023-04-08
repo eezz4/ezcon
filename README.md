@@ -173,11 +173,82 @@ const setNode = ezModal.useDispatch()
 const node = ezModal.useValue()
 ```
 
-## My Migration Example 2
+## My Migration Example 2 `ezCombineProvider`
 
 #### before
 
-#### after
+```tsx
+export const ctxPBL = {
+  summaryArr: createContext<nsPageBoard.Summary[]>([]),
+  pageItemArr: createContext<nsPageBoard.PageItem[]>([]),
+  refetch: createContext(() => {}),
+} as const;
+
+export const ProviderPBL = (props: { children: ReactNode }) => {
+  // ...
+  useEffect(() => {
+    // ...
+  }, [...]);
+
+  const q = useQueryGet(...);
+  const summaryArr: nsPageBoard.Summary[] = q.data?.summaryArr ?? [];
+  const pageItemArr: nsPageBoard.PageItem[] = q.data?.pageItemArr ?? [];
+  return (
+    <ctxPBL.summaryArr.Provider value={summaryArr}>
+      <ctxPBL.pageItemArr.Provider value={pageItemArr}>
+        <ctxPBL.refetch.Provider value={useCallback(() => q.refetch(), [q])}>
+          {props.children}
+        </ctxPBL.refetch.Provider>
+      </ctxPBL.pageItemArr.Provider>
+    </ctxPBL.summaryArr.Provider>
+  );
+};
+
+```
+
+```tsx
+const pageItemArr = useContext(ctxPBL.pageItemArr)
+const summaryArr = useContext(ctxPBL.summaryArr)
+const pblRefetch = useContext(ctxPBL.refetch)
+```
+
+#### after `ezCombineProvider`
+
+```tsx
+export const ezPBLSummaryArr = ezState<nsPageBoard.Summary[]>([]);
+export const ezPBLPageItemArr = ezState<nsPageBoard.PageItem[]>([]);
+export const ezPBLRefetch = ezRef(() => {});
+
+export const ProviderPBL = ezCombineProvider(
+  [ezPBLSummaryArr, ezPBLPageItemArr, ezPBLRefetch],
+  useProviderPBL
+);
+
+function useProviderPBL() {
+  // ...
+  useEffect(() => {
+    // ...
+  }, [...]);
+
+  const q = useQueryGet(...);
+  ezPBLRefetch.useMutableRefObject().current = q.refetch;
+
+  const pageItemArrDispatch = ezPBLPageItemArr.useDispatch();
+  const summaryArrDispatch = ezPBLSummaryArr.useDispatch();
+  useEffect(() => {
+    if (q.data) {
+      pageItemArrDispatch(q.data.pageItemArr ?? []);
+      summaryArrDispatch(q.data.summaryArr ?? []);
+    }
+  }, [q.data, pageItemArrDispatch, summaryArrDispatch]);
+}
+```
+
+```tsx
+const pageItemArr = ezPBLPageItemArr.useValue()
+const summaryArr = ezPBLSummaryArr.useValue()
+const pblRefetch = ezPBLRefetch.useMutableRefObject().current
+```
 
 ## License
 

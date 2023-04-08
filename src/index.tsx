@@ -75,11 +75,11 @@ export function ezRef<IV>(initialValue: IV) {
 
 /**
  * @description combine the `Provider`s of ezcons.
- * @param useProviderCombine When the provider is registered, register `a custom hook to run`.
+ * @param useCombineProvider When the provider is registered, register `a custom hook to run`.
  */
 export function ezCombineProvider(
   ezcons: { Provider: ProviderInterface }[],
-  useProviderCombine: () => void = () => undefined
+  useCombineProvider: () => void = () => undefined
 ) {
   return function (props: { children: React.ReactNode }) {
     return <RecursionProvider _ezcons={ezcons} />
@@ -97,7 +97,7 @@ export function ezCombineProvider(
     }
 
     function TerminalProvider() {
-      useProviderCombine()
+      useCombineProvider()
       return <React.Fragment>{props.children}</React.Fragment>
     }
   }
