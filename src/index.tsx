@@ -26,7 +26,7 @@ export function ezState<IV>(initialState: IV | (() => IV)) {
     if (useContext(contextNestedChecker))
       throw new Error('The same provider is being used nested.')
 
-    const state = useState(initialState)
+    const state = useState(useContext(contextValue))
     return (
       <contextNestedChecker.Provider value>
         <contextValue.Provider value={state[0]}>
@@ -61,7 +61,7 @@ export function ezRef<IV>(initialValue: IV) {
 
     return (
       <contextNestedChecker.Provider value>
-        <contextRef.Provider value={useRef(initialValue)}>
+        <contextRef.Provider value={useRef(useContext(contextRef).current)}>
           {props.children}
         </contextRef.Provider>
       </contextNestedChecker.Provider>
