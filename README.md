@@ -306,4 +306,4 @@ export const ProviderMyTheme = ezCombineProvider(
 
 ## License
 
-MIT © [stacew](https://github.com/stacew)
+MIT © [eezz4](https://github.com/eezz4)
