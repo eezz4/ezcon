@@ -81,24 +81,18 @@ export function ezCombineProvider(
   ezcons: { Provider: ProviderInterface }[],
   useCombineProvider: () => void = () => undefined
 ) {
-  return function (props: { children: React.ReactNode }) {
-    return <RecursionProvider _ezcons={ezcons} />
-
-    function RecursionProvider(props: {
-      _ezcons: { Provider: ProviderInterface }[]
-    }) {
-      if (props._ezcons.length === 0) return <TerminalProvider />
-      const LeftProvider = props._ezcons[0].Provider
-      return (
-        <LeftProvider>
-          <RecursionProvider _ezcons={props._ezcons.slice(1)} />
-        </LeftProvider>
-      )
-    }
-
-    function TerminalProvider() {
-      useCombineProvider()
-      return <React.Fragment>{props.children}</React.Fragment>
-    }
+  const HookRunner = (props: { children: React.ReactNode }) => {
+    useCombineProvider()
+    return <React.Fragment>{props.children}</React.Fragment>
   }
+
+  const CombinedProvider: ProviderInterface = (props: {
+    children: React.ReactNode
+  }) => {
+    return ezcons.reduceRight<JSX.Element>(
+      (children, ezcon) => <ezcon.Provider>{children}</ezcon.Provider>,
+      <HookRunner>{props.children}</HookRunner>
+    )
+  }
+  return CombinedProvider
 }

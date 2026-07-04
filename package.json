@@ -1,29 +1,32 @@
 {
   "name": "ezcon",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "React Easy Context",
   "author": "eezz4",
   "license": "MIT",
   "repository": "eezz4/ezcon",
   "main": "dist/index.js",
   "module": "dist/index.modern.js",
+  "types": "dist/index.d.ts",
   "source": "src/index.tsx",
   "engines": {
-    "node": ">=10"
+    "node": ">=14"
   },
   "scripts": {
     "build": "microbundle-crl --no-compress --format modern,cjs",
     "start": "microbundle-crl watch --no-compress --format modern,cjs",
     "prepare": "run-s build",
-    "test": "run-s test:unit test:lint test:build",
+    "test": "run-s test:unit test:build",
     "test:unit": "cross-env CI=1 react-scripts test --env=jsdom",
+    "test:build": "run-s build",
     "test:watch": "react-scripts test --env=jsdom",
     "predeploy": "cd example && yarn install && yarn run build"
   },
   "peerDependencies": {
-    "react": "^18.0.0"
+    "react": "^18.0.0 || ^19.0.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^14.1.2",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.11.5",
     "@types/react": "^18.2.48",
