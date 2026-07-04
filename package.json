@@ -1,6 +1,6 @@
 {
   "name": "ezcon",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "React Easy Context",
   "author": "eezz4",
   "license": "MIT",
@@ -56,9 +56,6 @@
     "ezState",
     "useRef",
     "ezRef",
-    "ezCombineProvider",
-    "redux",
-    "recoil",
-    "mobx"
+    "ezCombineProvider"
   ]
 }

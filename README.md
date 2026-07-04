@@ -6,6 +6,7 @@
 - You can use `scope providers`.
 - If the `same Provider` is nested and used, an `Error` is thrown.
 - You can use `combination of Providers`.
+- `ezState` keeps the `useState` lazy-initializer contract: `ezState(() => expensive())` runs `once per Provider mount` — never at import time. Outside a Provider, the default value is computed lazily on first use.
 
 [![NPM](https://img.shields.io/npm/v/ezcon.svg)](https://www.npmjs.com/package/ezcon) [![JavaScript Style Guide](https://img.shields.io/badge/code_style-standard-brightgreen.svg)](https://standardjs.com)
 

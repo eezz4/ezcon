@@ -4,15 +4,29 @@ interface ProviderInterface {
   (props: { children: React.ReactNode }): JSX.Element
 }
 
+const NO_PROVIDER = Symbol('ezcon: outside of a Provider')
+
+function lazyOnce<T>(factory: () => T) {
+  let cache: { ready: true; value: T } | { ready: false } = { ready: false }
+  return (): T => {
+    if (!cache.ready) cache = { ready: true, value: factory() }
+    return cache.value
+  }
+}
+
 /**
  * @description Provider & useValue & useDispatch
  */
 export function ezState<IV>(initialState: IV | (() => IV)) {
-  const contextValue = createContext<IV>(
+  // The out-of-Provider default is computed lazily so that declaring an
+  // ezState at module scope never runs the initializer at import time
+  // (SSR, localStorage access, expensive computation).
+  const getDefaultValue = lazyOnce(() =>
     typeof initialState === 'function'
       ? (initialState as () => IV)()
       : initialState
   )
+  const contextValue = createContext<IV | typeof NO_PROVIDER>(NO_PROVIDER)
   const contextDispatch = createContext<
     React.Dispatch<React.SetStateAction<IV>>
   >(() => {
@@ -26,7 +40,9 @@ export function ezState<IV>(initialState: IV | (() => IV)) {
     if (useContext(contextNestedChecker))
       throw new Error('The same provider is being used nested.')
 
-    const state = useState(useContext(contextValue))
+    // Passing initialState straight through keeps React's lazy-initializer
+    // contract: a function initial state runs once per Provider mount.
+    const state = useState(initialState)
     return (
       <contextNestedChecker.Provider value>
         <contextValue.Provider value={state[0]}>
@@ -39,7 +55,10 @@ export function ezState<IV>(initialState: IV | (() => IV)) {
   }
   return {
     Provider,
-    useValue: () => useContext(contextValue),
+    useValue: (): IV => {
+      const value = useContext(contextValue)
+      return value === NO_PROVIDER ? getDefaultValue() : value
+    },
     useDispatch: () => useContext(contextDispatch)
   }
 }
@@ -48,9 +67,12 @@ export function ezState<IV>(initialState: IV | (() => IV)) {
  * @description Provider & useMutableRefObject
  */
 export function ezRef<IV>(initialValue: IV) {
-  const contextRef = createContext<React.MutableRefObject<IV>>({
+  const getDefaultRef = lazyOnce<React.MutableRefObject<IV>>(() => ({
     current: initialValue
-  })
+  }))
+  const contextRef = createContext<
+    React.MutableRefObject<IV> | typeof NO_PROVIDER
+  >(NO_PROVIDER)
 
   const contextNestedChecker = createContext(false)
   const Provider: ProviderInterface = (props: {
@@ -59,17 +81,21 @@ export function ezRef<IV>(initialValue: IV) {
     if (useContext(contextNestedChecker))
       throw new Error('The same provider is being used nested.')
 
+    // Each Provider scope starts from initialValue, isolated from mutations
+    // made on the shared out-of-Provider default ref.
+    const ref = useRef(initialValue)
     return (
       <contextNestedChecker.Provider value>
-        <contextRef.Provider value={useRef(useContext(contextRef).current)}>
-          {props.children}
-        </contextRef.Provider>
+        <contextRef.Provider value={ref}>{props.children}</contextRef.Provider>
       </contextNestedChecker.Provider>
     )
   }
   return {
     Provider,
-    useMutableRefObject: () => useContext(contextRef)
+    useMutableRefObject: (): React.MutableRefObject<IV> => {
+      const ref = useContext(contextRef)
+      return ref === NO_PROVIDER ? getDefaultRef() : ref
+    }
   }
 }
 

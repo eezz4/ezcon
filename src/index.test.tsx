@@ -36,26 +36,84 @@ describe('ezState', () => {
     expect(() => dispatch(1)).toThrow('Dispatch function not provided')
   })
 
-  it('calls a function initial state only once', () => {
+  it('does not call a function initial state at definition time', () => {
+    const initializer = jest.fn(() => 3)
+    ezState(initializer)
+    expect(initializer).not.toHaveBeenCalled()
+  })
+
+  it('calls a function initial state once per Provider mount, not per render', () => {
     const initializer = jest.fn(() => 3)
     const ezCount = ezState(initializer)
 
     function Viewer() {
       return <div data-testid='value'>{ezCount.useValue()}</div>
     }
-    const { rerender } = render(
+    const { rerender, unmount } = render(
       <ezCount.Provider>
         <Viewer />
       </ezCount.Provider>
     )
+    expect(screen.getByTestId('value').textContent).toBe('3')
+    expect(initializer).toHaveBeenCalledTimes(1)
+
     rerender(
       <ezCount.Provider>
         <Viewer />
       </ezCount.Provider>
     )
-
-    expect(screen.getByTestId('value').textContent).toBe('3')
     expect(initializer).toHaveBeenCalledTimes(1)
+
+    unmount()
+    render(
+      <ezCount.Provider>
+        <Viewer />
+      </ezCount.Provider>
+    )
+    expect(initializer).toHaveBeenCalledTimes(2)
+  })
+
+  it('gives each Provider scope a fresh initial object from the initializer', () => {
+    const ezList = ezState(() => ({ items: [] as number[] }))
+    const grabbed: { items: number[] }[] = []
+
+    function Grabber() {
+      grabbed.push(ezList.useValue())
+      return null
+    }
+    render(
+      <React.Fragment>
+        <ezList.Provider>
+          <Grabber />
+        </ezList.Provider>
+        <ezList.Provider>
+          <Grabber />
+        </ezList.Provider>
+      </React.Fragment>
+    )
+
+    expect(grabbed[0]).not.toBe(grabbed[1])
+  })
+
+  it('computes the outside-Provider default lazily and only once', () => {
+    const initializer = jest.fn(() => ({ n: 1 }))
+    const ezObj = ezState(initializer)
+    expect(initializer).not.toHaveBeenCalled()
+
+    const grabbed: { n: number }[] = []
+    function Grabber() {
+      grabbed.push(ezObj.useValue())
+      return null
+    }
+    render(
+      <React.Fragment>
+        <Grabber />
+        <Grabber />
+      </React.Fragment>
+    )
+
+    expect(initializer).toHaveBeenCalledTimes(1)
+    expect(grabbed[0]).toBe(grabbed[1])
   })
 
   it('keeps state independent between sibling Provider scopes', () => {
@@ -121,6 +179,49 @@ describe('ezRef', () => {
     expect(refs[0]).not.toBe(refs[1])
     refs[0].current = 10
     expect(refs[1].current).toBe(0)
+  })
+
+  it('starts a Provider scope from initialValue, not the mutated global default', () => {
+    const ezValue = ezRef(0)
+    let globalRef!: React.MutableRefObject<number>
+    let scopedRef!: React.MutableRefObject<number>
+
+    function GlobalGrabber() {
+      globalRef = ezValue.useMutableRefObject()
+      return null
+    }
+    function ScopedGrabber() {
+      scopedRef = ezValue.useMutableRefObject()
+      return null
+    }
+    render(<GlobalGrabber />)
+    globalRef!.current = 99
+
+    render(
+      <ezValue.Provider>
+        <ScopedGrabber />
+      </ezValue.Provider>
+    )
+    expect(scopedRef!.current).toBe(0)
+    expect(globalRef!.current).toBe(99)
+  })
+
+  it('shares one lazily-created default ref outside any Provider', () => {
+    const ezValue = ezRef(0)
+    const refs: React.MutableRefObject<number>[] = []
+
+    function Grabber() {
+      refs.push(ezValue.useMutableRefObject())
+      return null
+    }
+    render(
+      <React.Fragment>
+        <Grabber />
+        <Grabber />
+      </React.Fragment>
+    )
+
+    expect(refs[0]).toBe(refs[1])
   })
 
   it('throws when the same Provider is nested', () => {
