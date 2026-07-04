@@ -1,4 +1,5 @@
 import React from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { ezCombineProvider, ezRef, ezState } from './index'
 
@@ -37,13 +38,13 @@ describe('ezState', () => {
   })
 
   it('does not call a function initial state at definition time', () => {
-    const initializer = jest.fn(() => 3)
+    const initializer = vi.fn(() => 3)
     ezState(initializer)
     expect(initializer).not.toHaveBeenCalled()
   })
 
   it('calls a function initial state once per Provider mount, not per render', () => {
-    const initializer = jest.fn(() => 3)
+    const initializer = vi.fn(() => 3)
     const ezCount = ezState(initializer)
 
     function Viewer() {
@@ -96,7 +97,7 @@ describe('ezState', () => {
   })
 
   it('computes the outside-Provider default lazily and only once', () => {
-    const initializer = jest.fn(() => ({ n: 1 }))
+    const initializer = vi.fn(() => ({ n: 1 }))
     const ezObj = ezState(initializer)
     expect(initializer).not.toHaveBeenCalled()
 
@@ -142,7 +143,7 @@ describe('ezState', () => {
 
   it('throws when the same Provider is nested', () => {
     const ezCount = ezState(0)
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() =>
       render(
         <ezCount.Provider>
@@ -226,7 +227,7 @@ describe('ezRef', () => {
 
   it('throws when the same Provider is nested', () => {
     const ezValue = ezRef(0)
-    const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() =>
       render(
         <ezValue.Provider>
@@ -244,7 +245,7 @@ describe('ezCombineProvider', () => {
   it('provides all combined scopes and runs the custom hook', () => {
     const ezA = ezState(1)
     const ezB = ezRef('b')
-    const hook = jest.fn()
+    const hook = vi.fn()
     const Combined = ezCombineProvider([ezA, ezB], hook)
 
     function Viewer() {
